@@ -1,0 +1,109 @@
+INSTALLING DEV SERVER :-
+========================
+1) Update the apt repository
+     sudo apt update
+2) sudo apt-get install openjdk-11-jdk
+3) Check the Java Version
+     java -version
+4) Install Maven & Git
+     sudo apt-get install -y git  maven
+5) Check the Verion of Git & Maven
+For Git : git --version
+For Maven : mvn --version
+6)jenkins installation :-
+=============================
+Open Jenkins website (https://jenkins.io/download/)
+copy the jenkin url
+wget past the copyed url
+eg:-wget https://get.jenkins.io/war-stable/2.375.1/jenkins.war
+
+7)starting jenkins:-
+java -jar jenkins.war
+
+====================================================================================================================================================
+
+installation of tom cat:-
+=======================
+1) Update the apt repository 
+     sudo apt-get update
+2) Install tomcat9
+     sudo apt-get install -y tomcat9
+3)After this we need to install one more package
+     sudo apt-get install -y tomcat9-admin
+4)check the tomcate are install or not --->copy the public ip:8080 past in google 
+ it sho working start
+5) enter linux command in QA Server  -   cd /etc/tomcat9/
+6) enter linux command in QA Server  -   ls
+7) You will find the file tomcat-users.xml
+8) Open the file  
+     sudo vim tomcat-users.xml
+9) In the end we need to add one statement 
+     <user username="training" password="saisai" roles="manager-script,manager-status,manager-gui"/>
+10) When ever we do any changes done in any service we need to restart the service
+     sudo service tomcat9 restart
+=================================================================================================================================================
+ripet the above 10 steps for production server 
+ to chainge user nsme 
+    <user username="practice" password="saisai" roles="manager-script,manager-status,manager-gui"/> 
+
+===============================================================================================================================
+
+
+11) Enter the URL of github reposiditory
+https://github.com/sunildevops77/maven.git
+
+=================================================================================================================================
+
+12).for testing
+https://github.com/sunildevops77/TestingNew.git
+
+=====================================================================================================================
+
+master slave configuration :-
+============================
+1)update repository --->    sudo apt-get update
+
+2)install java  ------>    sudo apt-get install openjdk-11-jdk
+
+3)We need to establish password less connection between Dev server and Slave machine
+--> Check you user - howami--->admin
+--> set password  for  ubuntu  user ---> syntax: sudo  passwd  <user_name>--->sudo passwd ubuntu
+-->set password
+--> go to the path -->cd /etc/ssh
+--> sudo vim sshd_config  --> chainge password athentification no to yes
+--> Restart the service  --> sudo service ssh restart
+
+4)connect the dev server (master) -->connect slave server through dev server --->ssh ubuntu@private_ip_slave_machine ---> $ ssh ubuntu@172.31.34.152
+
+5)back to master server ---> exit
+
+6)for key generation to password less connection ----> ssh-keygen      in master machine  (take defaule options like path enter)
+
+7)copy the keys to slave server  ---> ssh-copy-id  ubuntu@private_ip_slave_server ---->ssh-copy-id  ubuntu@172.31.34.152
+
+10)Create an empty folder which will work like workspace for jenkins to use on the slave machine  ---> mkdir workspace --> cd workspace --->pwd -->/home/ubuntu/workspace
+
+
+creating node in jenkins:-
+=========================
+1)Open the dashboard of jenkins  --->  manage jenkins --- manage nodes  -->Click on new node ----  node name -  Myslave
+                                                                                                            - select permanent agent
+2)Remote root directory   -/home/ubuntu/workspace
+3)Label - Slave_lab
+4) Go to Launch method  --->Select Launch agent by connecting it to the controlar  ----> select (use websecot) ---> save
+5) one node are created but that node are not conect to the matser machine for connecting one code should be generated --->copy the link in generated code
+6)sudo wget copyd link enter ----->copy the entair code paste in slave machine 
+7)before copy check the publick ip of that code and master machine if it not mach chainge that to follow
+8)manage jenkins --->configure systems --->jenkins url
+
+
+*configure the job run on the slave
+=======================================
+Select Testing Job  ----> Go to Configure  -- General Tab ---> Check Restrict where this project can be run  -->Enter Label Expression ( Slave_lab) 
+ -->Apply ---> Save 
+
+/home/ubuntu/jnlpJars
+ 
+
+
+ 

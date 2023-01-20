@@ -1,0 +1,593 @@
+ansible installation:-
+=====================
+Create 4 Servers ( Ubuntu 18 )
+1 is controller
+3  are managed nodes
+Name the instances as
+Controller,Server1,Server2,Server3
+Ubuntu machines default come with Python3   ----> Ansible supports Python2
+We need to downgrade the machines from python3  to Python2
+
+Connect server1
+Check the version
+$ python3 --version
+To Install Python2;-
+-------------------
+$ sudo apt-get update
+$ sudo apt-get dist-upgrade ( It will point to  older apt repository  where python2 is available)
+$  sudo apt-get install -y python2.7 python-pip
+$ python2 --version
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Establish password less ssh connection:-
+========================================
+$ sudo passwd ubuntu     
+$ sudo vim /etc/ssh/sshd_config
+change ------> PasswordAuthentication yes
+$ sudo service ssh restart
+$ exit
+++++++++++++++++++
+Repeat the same steps in server2 and server3
+++++++++++++++++
+Now,  Connect to controller  -----> Even in controller also  python2  version should be available becouse install python 2
+---------------------------------------------------------------------------------------------------------------------------
+Now , We need to generate ssh connections
+$ ssh-keygen  (take default settings )
+Now copy the key to managed nodes
+$ ssh-copy-id ubuntu@172.31.30.80   ( private Ip of server1 )
+$ ssh-copy-id ubuntu@172.31.20.27    ( private Ip of server2 )
+$ ssh-copy-id ubuntu@172.31.19.224  ( private Ip of server3 )
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Installing ansible now:-
+=======================	
+Connect to controller.
+$ sudo apt-get install software-properties-common  --> (software-properties-common,is a base package which is required to install ansible )
+$ sudo apt-add-repository ppa:ansible/ansible
+$ sudo apt-get update
+$ sudo apt-get install -y ansible
+$ ansible --version
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Write the ip address of nodes in the inventory file for adding all managed node to controller node
+$ cd /etc/ansible
+$ ls
+$ sudo vim hosts
+insert the private ip addresss of 3 servers
+$ ls -la     ( to see the list in the current machine )
+$ ansible all  -a  'ls  -la'    ( you will get the list of the files in all managed nodes )
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+We have two Ways  to do ansible:-
+============================
+1) adhoc commands
+2) playbooks
+adhoc commands:-
+==============
+Important modules in ansible
+1) command - This module is used for executing basic linux commands on managed nodes.
+2) shell -  This module is used to execute commands which involved redirection and piping and to execute shell scripts on managed nodes.
+3) ping  --  This module is used to check if the remote server is pingable or not.
+4) user --  This module is used for user management like create user, setting password, assign home directory  etc
+5) copy  --  This module is used to copy the files and folders from controller to managed nodes
+6) fetch  --  This module is used to copy files and folder from managed nodes to controller
+7) file  --  This module is used for creating or deleting files and folders on managed nodes.
+8) stat  --  Used to capture detailed information about files and folders present in managed nodes.
+9) debug --  Used to display output of any module
+10) apt   --  Used for performing package management on managed nodes ie installing softwares / upgrading repositories  etc . It works on ubuntu, debain flavours of linux. 
+11) yum  --  similar to apt module. It works on Red hat linux, centos etc
+12) git  --  used to perform git version controlling on managed nodes
+13) replace -- This is used to replace specific text in configuration file with some other text.
+14) service  -- used for starting / stoping / restarting services on managed nodes.
+15) include  --  Used for calling child play books  from parent play book
+16) uri    -- useful in checking  if remote url is reachable or not.
+17) docker_container  --  used to execute docker  commands related to container management on managed nodes
+18) docker_image  --  used to execute commands related to docker images on managed nodes.
+19) docker_login  --  used to login to docker hub from managed nodes.
+20) setup   --  used to capturing system information related to the managed nodes.
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+process:-
+=========
+syntax  ------>     $ ansible  all/group_name/ipaddress -i  path_of_inventory_file -m modulename  -a  'arguments'
+1). command module:-  (This module is used for executing basic linux commands on managed nodes)
+===================
+$ ansible all -i /etc/ansible/hosts -m command -a 'free'        ------> for checking memory
+$ ansible all -i /etc/ansible/hosts -m command -a 'touch file1' ------> for creating newfile 
+*****.Create my own inventory file  ----> vim  myinventor ---> past the wanted ip adderss :wq
+      checking new inventry -----> $ cat myinventory
+2).Shell Module:-   (This module is used to execute commands which involved redirection and piping and to execute shell scripts on managed nodes.)
+=================
+ $ ansible  all  -m  shell -a 'ls -la > file2'
+6).command to install docker  on all managed nodes  ---->   $ ansible all  -m shell -a 'curl  -fsSL  https://get.docker.com  -o get-docker.sh'   
+                                                            $ ansible all -m shell -a 'sh get-docker.sh'   
+3).User Module:-     (This module is used for user management like create user, setting password, assign home directory  etc)
+===============
+$ ansible  all -m user  -a  'name=anu  password=sunil'
+( we ger error : permission denied )
+$ ansible  all -m user  -a  'name=anu  password=sunil'  -b  ( become , for higher privileges on managed nodes )
+To check if user is create or not   
+$  ssh 172.31.12.239
+$ vim  /etc/passwd
+$  exit
+4).apt module:- (used for package management)
+===========
+**.Install git in all managed nodes ------>  $ ansible all -m apt  -a 'name=git  state=present' -b
+    1)  ansible all -m apt  -a 'name=git  state=present' -b
+        state=present  is for installation
+        state=latest    for upgradation
+        state=absent    for uninstallation
+    2). I wan to update apt-repositoty and install tomcat8   ----->  ansible all -m  apt -a 'name=tomcat8 state=present  update_cache=yes' -b
+        To update apt-repository on managed nodes  update_cache=yes  is used 
+
+5).File module:-    (This is used to create files and folder on managed nodes)
+===============
+   ansible all  -m  file -a  'name=/tmp/file5  state=touch' 
+   state=touch   is to create files
+   state=directory  is to create directory
+   state=absent  is for deleting file/directory
+** $  ansible all  -m  file -a  'name=file1  state=touch owner=Anu group=Ravi  mode=700'  -b         for providing permisions
+      File module can be used to change the ownership, group ownership and permissions on the file.
+
+6).Copy Module:-       (This is used for copying the files from controller into managed nodes.)
+================
+to create a file on controlar machine and copy in all managed nodes
+$ cat  >  newfile1  --some content -- ctrl+d
+$ ansible all -m  copy -a 'src=newfile1  dest=/home/ubuntu' --- check the permission on managed node -- ls -la
+$ ansible all -m  copy -a 'src=newfile1  dest=/home/ubuntu owner=root  group=root mode=760' -b     ----for chainging permissions
+2)$ sudo vim tomcat-users.xml
+Go to Insert mode
+<tomcat-users>
+   <user  username="training"  password="freefree"  roles="manager-script"/>
+<tomcat-users>
+:wq
+$  ansible all -m  copy  -a  'src=tomcat-users.xml  dest=/etc/tomcat8'  -b
+
+Notes:
+Copy module is used to change the ownership, group and permissions of the files that are copied to managed nodes.
+
+7).Fetch  Module:-    ( opposite of copy  module )
+=================
+
+$ cat  >  newfile1  --some content -- ctrl+d
+$ ansible all -m  fetch -a 'src=newfile1  dest=/home/ubuntu' --- check the permission on managed node -- ls -la
+$ ansible all -m  fetch -a 'src=newfile1  dest=/home/ubuntu owner=root  group=root mode=760' -b     ----for chainging permissions
+
+8).Git Modules:-        (This is used to perform git version controlling on the managed nodes.)
+=============
+$ansible all -m  git  -a  'repo=https://github.com/sunildevops77/repo1.git  dest=/tmp/mygit'  -b
+The above command will download the files in all managed nodes.
+
+
+9).Service Module:-    (This is used for starting/ stoping / restarting the services.)
+==================
+$  ansible all   -m service    -a 'name=tomcat8  state=restarted'  -b
+     state=restarted is for restarting a service
+     state=stopped  is for stopping a running service
+     state=started  is for starting a stopped service
+
+10).Replace module:-  (This is used to replace specific text in configuration file with some other text.)
+===================
+$  ansible all  -m replace  -a 'regexp=8080 replace=9090 path=/etc/tomcat8/server.xml'  -b  ----> hear replacing the port value
+ check it will work with using nds from aws -----> ec2-13-234-48-168.ap-south-1.compute.amazonaws.com:9090 --->it will show error we need to restart it
+$  ansible all   -m service    -a 'name=tomcat8  state=restarted'  -b    ----> now it will work
+
+11).uri  module:-
+================
+I want to check facebook is reachable for not in all managed nodes.
+$ ansible all -m   uri  -a 'url=http://facebook.com'  -----> In the output  ( green color )  status - 200
+$ ansible all -m   uri  -a 'url=http://hgyi9cb.com'   -----> invalid url  ,  we get  status as -1
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Play books:-
+============
+$ mkdir  playbooks
+$ cd playbooks
+$ vim playbook1.yml
+INSERT   mode
+---
+- name: Install git and clone a remote repository
+  hosts: all
+  tasks:
+    - name: Install git
+      apt:
+       name: git
+       state: present
+       update_cache: yes
+    - name: clone remote git repository
+      git:
+        repo: https://github.com/sunilkumark11/git-9am-batch.git
+        dest: /home/ubuntu/newgit  	
+...
+To check the syntax:   ------> $ ansible-playbook  playbook3.yml  --syntax-check
+To run the playbook  ------->  $ ansible-playbook  playbook3.yml  -b
+
+==================================================================================================================================================
+
+2nd example on playbook:-  (Create user on all managed nodes and I want to copy passwd file.)
+=========================
+$ vim playbook2.yml
+---
+- name: Create user and copy passwd file
+  hosts: all
+  tasks:
+          - name: User creation
+            user:
+             name: kiran
+             password: sunilsunil
+             uid: 6779
+             home: /home/kiran
+          - name: Copy password into users home dir
+            copy:
+             src: /etc/passwd
+             dest: /home/kiran
+...
+=================================================================================================================================================
+Ex 3:-
+=====
+Playbook to configure tomcat8   ( earlier  example )
+1st uninstall tomcat
+$ ansible  all  -m  apt -a 'name=tomcat8 state=absent  purge=yes'  -b
+$ vim playbook3.yml
+---
+- name: Configure  tomcat8
+  hosts: all
+  tasks:
+   - name: Install tomcat8
+     apt:
+      name: tomcat8
+      state: present
+   - name: copy tomcat-users.xml file
+     copy:
+      src:  /home/ubuntu/tomcat-users.xml
+      dest: /etc/tomcat8
+   - name: change port of tomcat from 8080 to 9090
+     replace:
+      regexp: 8080
+      replace: 9090
+      path: /etc/tomcat8/server.xml
+   - name: restart tomcat8
+     service:
+      name: tomcat8
+      state: restarted
+   - name: check url response of server 1
+     uri:
+      url: http://172.31.7.134:9090
+   - name:   check url response of server 2
+     uri:
+      url: http://172.31.3.46:9090
+...
+=====================================================================================================================================================
+ex-4:-
+=====
+Install apache2  in all managed nodes, Place our own content in default homepage
+$ cd playbooks
+$ vim playbook4.yml
+---
+- name: configuring apache2
+  hosts: all
+  tasks:
+   - name: Install apache2
+     apt:
+      name: apache2
+      state: present
+Save and quit
+$ ansible-playbook  playbook4.yml  -b
+To check apache2 is installed
+$ ssh 172.31.12.239
+( Homepage of apache2 is present in /var/www/html )
+$ cd  /var/www/html 
+$ ls
+we get index.html  ( this html file is default homepage of apache )
+Editing the index.html page
+This is possible using copy module.
+$ exit
+$ vim playbook4.yml
+---
+- name: configuring apache2
+  hosts: all
+  tasks:
+   - name: Install apache2
+     apt:
+      name: apache2
+      state: present
+   - name: Edit index.html file
+     copy:
+      content: "Welcome to Playbooks\n"
+      dest: /var/www/html/index.html
+...
+$ ansible-playbook  playbook4.yml  -b
+
+=============================================================================================================================================
+OPENING THE URL FROM TERMINAL:-
+============================
+by using elinks
+$  elinks http://google.com  ------>    We get error ( elinks not found )
+Let's install elinks         ------>  $ sudo apt-get install -y elinks
+$  elinks http://google.com  ------>    now its worked
+
+===================================================================================================================================================
+Global scope variables:-
+======================
+$ vim playbook5.yml
+---
+- name: Install software packages
+  hosts: all
+  tasks:
+   - name: Install/uninstall/update etc
+     apt:
+      name: "{{a}}"
+      state: "{{b}}"
+      update_cache: "{{c}}"
+...
+To run the playbook  by passing values to the variables
+$ ansible-playbook  playbook5.yml  --extra-vars "a=git b=absent c=no"  -b
+$ ansible-playbook  playbook5.yml  --extra-vars "a=tree b=present c=no"  -b
+
+====================================================================================================================================================
+play scope variable:-
+===================
+$ vim playbook7.yml
+---
+- name: Using play scope variable
+  hosts: all
+  vars:
+   - a: tomcat8
+   - b: present
+   - c: no
+  tasks:
+   - name: Install tomcat8
+     apt:
+      name: "{{a}}"
+      state: "{{b}}"
+      update_cache: "{{c}}"
+...
+$ ansible-playbook  playbook7.yml  -b
+$ ansible-playbook  playbook5.yml  --extra-vars "a=tree b=present c=no"  -b
+The above command will install tree because global scope variables have higher priority
+============================================================================================================================================
+create gropig:-
+==============
+$ sudo  vim  /etc/ansible/hosts
+[webserver]
+172.31.11.96
+172.31.6.207
+[appserver]
+172.31.12.138
+[dbserver]
+172.31.31.161
+[india:children]
+webserver
+dbserver
+====================================================================================================================================================
+Host scope variables:-
+====================
+These variables are classified into 2 types
+1) Variables to work on group of hosts
+2) Variables to work on single hosts
+
+ Variables to work on group of hosts:-
+=====================================
+playbooks$ mkdir group_vars
+Note:  group_vars  folder should be present in the same location of playbook files.
+$ cd group_vars
+$  vim webserver
+a: Prakash
+b: logiclabs
+c: /home/Prakash
+d: 67809
+e: /bin/bash
+Save and Quit
+$ cd ..
+playbooks$ vim playbook8.yml
+---
+- name: Using host scope variables
+  hosts: webserver
+  tasks:
+   - name: User creation
+     user:
+      name: "{{a}}"
+      password: "{{b}}"
+      home: "{{c}}"
+      uid: "{{d}}"
+      shell: "{{e}}"
+...
+save and quit
+TO run the playbook
+$ ansible-playbook playbook8.yml  -b  ( It runs on two machines)
+++++++++++++++++++++++++++++
+Lets add few more variables
+$ cd group_vars
+$ vim webserver
+
+a: Prakash
+b: durgasoft
+c: /home/Prakash
+d: 67809
+e: /bin/bash
+f: tree
+g: present
+h: no
+save and quit
+$ cd ..
+$ vim playbook9.yml
+---
+- name: Using host scope variables
+  hosts: webserver
+  tasks:
+   - name: Install software
+     apt:
+      name: "{{f}}"
+      state: "{{g}}"
+      update_cache: "{{h}}"
+...
+
+$ ansible-playbook  playbook9.yml  -b
+
+Variables to work on single hosts:-
+=================================
+playbooks$ mkdir host_vars
+$ cd host_vars
+$ vim 172.31.6.241        ( 172.31.6.241  private Ip of server4 )
+
+a: firewalld
+b: present
+c: yes
+
+save and quit
+$ cd ..
+$ vim playbook10.yml
+---
+- name: Use host scope variables
+  hosts: 172.31.6.241
+  tasks:
+   - name: Install firewall
+     apt:
+      name: "{{a}}"
+      state: "{{b}}"
+      update_cache: "{{c}}"
+...
+save and quit
+$ ansible-playbook  playbook10.yml  -b
+==================================================================================================================================
+
+Implementing loops:-
+===================
+$ vim playbook11.yml
+
+- name: Install software packages
+  hosts: webserver
+  tasks:
+   - name: Install software
+     apt:
+      name: "{{item}}"
+      state: present
+      update_cache: no
+     with_items:
+      - tree
+      - git
+      - default-jdk
+      - apache2
+...
+ex-2:-
+----
+Requirement:
+Tree needs to be installed
+Git needs to be unintalled
+jdk  needs to be updated
+apache needs to be installed and update cache
+$ cd playbooks
+$ vim playbook12.yml
+---
+- name: Install software packages
+  hosts: webserver
+  tasks:
+   - name: Install software
+     apt:
+      name: "{{item.a}}"
+      state: "{{item.b}}"
+      update_cache: "{{item.c}}"
+     with_items:
+      - {a: tree,b: present,c: no}
+      - {a: git,b: absent,c: no}
+      - {a: default-jdk,b: absent,c: no}
+      - {a: apache2,b: present,c: yes}
+...
++++++++++++++++++++++++
+Ex:-3 For working on multiple modules with multiple with_items.
+Requirement: To create multiple users and files/directories in user's home directories.
+---
+- name: Create users and create files/dir in users home dir
+  hosts: all
+  tasks:
+   - name: Create multiple users
+     user:
+      name: "{{item.a}}"
+      password: "{{item.b}}"
+      home: "{{item.c}}"
+     with_items:
+      - {a: Farhan,b: durgasoft,c: /home/Farhan}
+      - {a: Ravi,b: durgasoft,c: /home/ubuntu/Ravi}
+   - name: creating files and directories in users home dir
+     file:
+      name: "{{item.a}}"
+      state: "{{item.b}}"
+     with_items:
+      - {a: /home/Farhan/file1,b: touch}
+      - {a: /home/ubuntu/Ravi/dir1,b: directory}
+...
+save and quit
+---------
+To check , user is created or not?
+$ ssh 172.31.11.96
+$ vim /etc/passwd
+TO check files and dir  are created or not
+$ cd /home/Farhan
+$ ls     ( we can see the file)
+$ cd
+$ pwd
+$ cd Ravi
+$ ls  ( we can see the dir )
+$ exit
+============================================================================================================================================
+Handlers:-
+========
+$ vim playbook14.yml
+
+---
+- name: Confugure apache2 using handlers
+  hosts: all
+  tasks:
+   - name: Install apache2
+     apt:
+      name: apache2
+      state: present
+   - name: Edit index.html file
+     copy:
+      content: "Logiclabs\n"
+      dest: /var/www/html/index.html
+     notify: Restart apache2
+  handlers:
+   - name: Restart apache2
+     service:
+      name: apache2
+      state: restarted
+...
+
+$ ansible-playbook  playbook14.yml  -b
+==============================================================================================================================================
+Error Handling:-
+===============
+---
+- name: Error handling
+  hosts: all
+  tasks:
+   - block:
+      - name: Install apache1
+        apt:
+         name: apache1
+         state: present
+     rescue:
+      - name: Install apache2
+        apt:
+         name: apache2
+         state: present
+     always:
+      - name: Check url response
+        uri:
+         url: "{{item}}"
+        with_items:
+         - http://172.31.7.134
+         - http://172.31.3.46
+         - http://172.31.2.140
+         - http://172.31.6.241
+...
+
+$ ansible-playbook  playbook15.yml  -b
+
+
+
+
+
+
+
+
